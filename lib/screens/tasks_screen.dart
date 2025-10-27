@@ -92,11 +92,6 @@ class _TasksScreenState extends State<TasksScreen>
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddTaskDialog,
-        backgroundColor: const Color(0xFF6366F1),
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
     );
   }
 
@@ -435,10 +430,6 @@ class _TasksScreenState extends State<TasksScreen>
         ),
       ),
     );
-  }
-
-  void _showAddTaskDialog() {
-    _showTaskDialog();
   }
 
   void _showEditTaskDialog(Map<String, dynamic> task) {

@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'screens/home_screen.dart';
 import 'screens/tasks_screen.dart';
+import 'screens/add_task_screen.dart';
 import 'screens/calendar_screen.dart';
-import 'screens/habits_screen.dart';
+import 'screens/statistics_screen.dart';
 import 'screens/profile_screen.dart';
 import 'styles/app_colors.dart';
 
@@ -61,18 +62,29 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
+  late final List<Widget> _screens = [
     const HomeScreen(),
     const TasksScreen(),
     const CalendarScreen(),
-    const HabitsScreen(),
+    const StatisticsScreen(),
     const ProfileScreen(),
   ];
+
+  void _showAddTaskDialog() {
+    // This will navigate to the AddTaskScreen
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AddTaskScreen()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(index: _currentIndex, children: _screens),
+      floatingActionButton: _currentIndex == 1
+          ? _TasksFloatingActionButton(onPressed: _showAddTaskDialog)
+          : null,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -122,7 +134,7 @@ class _MainScreenState extends State<MainScreen> {
             BottomNavigationBarItem(
               icon: Icon(Icons.trending_up_outlined),
               activeIcon: Icon(Icons.trending_up),
-              label: 'Habits',
+              label: 'Statistics',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.person_outline),
@@ -132,6 +144,21 @@ class _MainScreenState extends State<MainScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _TasksFloatingActionButton extends StatelessWidget {
+  const _TasksFloatingActionButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton(
+      onPressed: onPressed,
+      backgroundColor: const Color(0xFF6366F1),
+      child: const Icon(Icons.add, color: Colors.white),
     );
   }
 }

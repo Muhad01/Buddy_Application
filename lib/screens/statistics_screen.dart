@@ -92,7 +92,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         child: Column(
           children: [
             _buildHeader(context),
-            Expanded(child: _buildHabitsList()),
+            Expanded(child: _buildStatisticsList()),
           ],
         ),
       ),
@@ -120,7 +120,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            '$completedToday of $totalHabits habits completed today',
+            '$completedToday of $totalHabits tasks completed today',
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey[600],
@@ -132,18 +132,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
-  Widget _buildHabitsList() {
-    final dailyHabits = _habits
-        .where((habit) => habit['isDaily'] == true)
-        .toList();
-
+  Widget _buildStatisticsList() {
     return ListView(
       padding: const EdgeInsets.all(20),
-      children: [
-        _buildGraphSection(),
-        const SizedBox(height: 20),
-        ...dailyHabits.map((habit) => _buildHabitCard(habit)).toList(),
-      ],
+      children: [_buildGraphSection()],
     );
   }
 
@@ -416,7 +408,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     return {'spots': spots, 'labels': labels};
   }
 
-  Widget _buildHabitCard(Map<String, dynamic> habit) {
+  Widget _buildStatisticCard(Map<String, dynamic> habit) {
     final progress = habit['current'] / habit['target'];
 
     return Container(

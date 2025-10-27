@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import '../styles/app_colors.dart';
-import '../styles/app_text_styles.dart';
-import '../styles/app_decorations.dart';
-import '../styles/app_spacing.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -29,6 +26,11 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _openAIAssistant(context),
+        backgroundColor: const Color(0xFF6366F1),
+        child: const Icon(Icons.psychology, color: Colors.white),
       ),
     );
   }
@@ -531,5 +533,37 @@ class HomeScreen extends StatelessWidget {
     ];
 
     return '${days[date.weekday - 1]}, ${months[date.month - 1]} ${date.day}';
+  }
+
+  static void _openAIAssistant(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.psychology, color: Color(0xFF6366F1)),
+            SizedBox(width: 8),
+            Text('AI Assistant'),
+          ],
+        ),
+        content: const Text(
+          'Your AI assistant is ready to help you with your tasks, habits, and schedule!',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Implement AI assistant functionality
+            },
+            child: const Text('Start Chat'),
+          ),
+        ],
+      ),
+    );
   }
 }

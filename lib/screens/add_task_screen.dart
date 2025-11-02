@@ -14,16 +14,28 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   final TextEditingController _descriptionController = TextEditingController();
 
   String _selectedPriority = 'medium';
-  String _selectedTaskType = 'One-Time Task';
+  String _selectedTaskType = 'One time task';
   String _selectedDueDate = '';
   String _selectedNotificationTime = '';
+  bool _enableNotification = false;
+  bool _enableMessage = false;
+  bool _noTimeLimit = false;
+  Set<String> _selectedDays = <String>{};
+
+  final List<String> _daysOfWeek = [
+    'Mon',
+    'Tue',
+    'Wed',
+    'Thu',
+    'Fri',
+    'Sat',
+    'Sun',
+  ];
 
   final List<String> _taskTypes = [
-    'One-Time Task',
-    'Recurring Task',
-    'Project Task',
-    'Personal Task',
-    'Work Task',
+    'Daily task',
+    'One time task',
+    'Weekly task',
   ];
 
   @override
@@ -54,6 +66,16 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                     _buildTaskTypeSection(),
                     const SizedBox(height: 24),
                     _buildDateAndTimeSection(),
+                    if (_selectedTaskType == 'Weekly task') ...[
+                      const SizedBox(height: 24),
+                      _buildDaysOfWeekSection(),
+                    ],
+                    if (_selectedTaskType == 'Daily task' ||
+                        _selectedTaskType == 'One time task' ||
+                        _selectedTaskType == 'Weekly task') ...[
+                      const SizedBox(height: 24),
+                      _buildNotificationMessageSection(),
+                    ],
                     const SizedBox(height: 40),
                     _buildAddTaskButton(),
                     const SizedBox(height: 20),
@@ -263,7 +285,40 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               }).toList(),
               onChanged: (String? newValue) {
                 if (newValue != null) {
-                  setState(() => _selectedTaskType = newValue);
+                  setState(() {
+                    _selectedTaskType = newValue;
+                    // Reset notification/message options when switching away from Daily task, One time task, and Weekly task
+                    if (newValue != 'Daily task' &&
+                        newValue != 'One time task' &&
+                        newValue != 'Weekly task') {
+                      _enableNotification = false;
+                      _enableMessage = false;
+                    }
+                    // Reset no time limit when switching away from One time task
+                    if (newValue != 'One time task') {
+                      _noTimeLimit = false;
+                      // Clear date and time when switching away from One time task
+                      if (newValue != 'Daily task' &&
+                          newValue != 'Weekly task') {
+                        _selectedDueDate = '';
+                        _selectedNotificationTime = '';
+                      }
+                    } else if (_noTimeLimit) {
+                      // Clear date and time when switching to One time task with no time limit
+                      _selectedDueDate = '';
+                      _selectedNotificationTime = '';
+                    }
+                    // Reset selected days when switching away from Weekly task
+                    if (newValue != 'Weekly task') {
+                      _selectedDays.clear();
+                    }
+                    // Clear time when switching to/from task types that require time
+                    if (newValue != 'Daily task' &&
+                        newValue != 'Weekly task' &&
+                        newValue != 'One time task') {
+                      _selectedNotificationTime = '';
+                    }
+                  });
                 }
               },
             ),
@@ -274,23 +329,231 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   }
 
   Widget _buildDateAndTimeSection() {
+    if (_selectedTaskType == 'Daily task') {
+      // Only show time for daily task (required)
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Text('Time', style: AppTextStyles.labelLarge),
+              Text(' *', style: TextStyle(color: AppColors.error)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildDateTimeField(
+            icon: Icons.access_time,
+            placeholder: 'Select Time (Required)',
+            value: _selectedNotificationTime,
+            onTap: _selectNotificationTime,
+          ),
+        ],
+      );
+    } else if (_selectedTaskType == 'One time task') {
+      // Show both date and time for one time task (both required, unless no time limit)
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildNoTimeLimitButton(),
+          if (!_noTimeLimit) ...[
+            const SizedBox(height: 12),
+            const Row(
+              children: [
+                Text('Date and Time', style: AppTextStyles.labelLarge),
+                Text(' *', style: TextStyle(color: AppColors.error)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildDateTimeField(
+              icon: Icons.calendar_today,
+              placeholder: 'Select Due Date (Required)',
+              value: _selectedDueDate,
+              onTap: _selectDueDate,
+            ),
+            const SizedBox(height: 16),
+            _buildDateTimeField(
+              icon: Icons.access_time,
+              placeholder: 'Select Time (Required)',
+              value: _selectedNotificationTime,
+              onTap: _selectNotificationTime,
+            ),
+          ],
+        ],
+      );
+    } else if (_selectedTaskType == 'Weekly task') {
+      // Show only time for weekly task (required)
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Text('Time', style: AppTextStyles.labelLarge),
+              Text(' *', style: TextStyle(color: AppColors.error)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildDateTimeField(
+            icon: Icons.access_time,
+            placeholder: 'Select Time (Required)',
+            value: _selectedNotificationTime,
+            onTap: _selectNotificationTime,
+          ),
+        ],
+      );
+    } else {
+      // Show both date and time for other task types (optional)
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildDateTimeField(
+            icon: Icons.calendar_today,
+            placeholder: 'Select Due Date',
+            value: _selectedDueDate,
+            onTap: _selectDueDate,
+          ),
+          const SizedBox(height: 16),
+          _buildDateTimeField(
+            icon: Icons.access_time,
+            placeholder: 'Select Notification Time',
+            value: _selectedNotificationTime,
+            onTap: _selectNotificationTime,
+          ),
+        ],
+      );
+    }
+  }
+
+  Widget _buildDaysOfWeekSection() {
+    if (_daysOfWeek.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildDateTimeField(
-          icon: Icons.calendar_today,
-          placeholder: 'Select Due Date',
-          value: _selectedDueDate,
-          onTap: _selectDueDate,
+        const Row(
+          children: [
+            Text('Days of Week', style: AppTextStyles.labelLarge),
+            Text(' *', style: TextStyle(color: AppColors.error)),
+          ],
         ),
-        const SizedBox(height: 16),
-        _buildDateTimeField(
-          icon: Icons.access_time,
-          placeholder: 'Select Notification Time',
-          value: _selectedNotificationTime,
-          onTap: _selectNotificationTime,
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade300),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(_daysOfWeek.length, (index) {
+              final day = _daysOfWeek[index];
+              final isSelected = _selectedDays.contains(day);
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    left: index == 0 ? 0 : 4,
+                    right: index == _daysOfWeek.length - 1 ? 0 : 4,
+                  ),
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        if (isSelected) {
+                          _selectedDays.remove(day);
+                        } else {
+                          _selectedDays.add(day);
+                        }
+                      });
+                    },
+                    child: Container(
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.primary
+                            : Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.primary
+                              : Colors.grey.shade300,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          day,
+                          style: TextStyle(
+                            color: isSelected
+                                ? Colors.white
+                                : AppColors.textSecondary,
+                            fontSize: 14,
+                            fontWeight: isSelected
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
         ),
       ],
+    );
+  }
+
+  Widget _buildNoTimeLimitButton() {
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _noTimeLimit = !_noTimeLimit;
+          if (_noTimeLimit) {
+            // Clear date and time when selecting no time limit
+            _selectedDueDate = '';
+            _selectedNotificationTime = '';
+          }
+        });
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: Checkbox(
+                value: _noTimeLimit,
+                onChanged: (value) {
+                  setState(() {
+                    _noTimeLimit = value ?? false;
+                    if (_noTimeLimit) {
+                      // Clear date and time when selecting no time limit
+                      _selectedDueDate = '';
+                      _selectedNotificationTime = '';
+                    }
+                  });
+                },
+                activeColor: AppColors.primary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'No time limit',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -324,6 +587,82 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                         : AppColors.textPrimary,
                     fontSize: 16,
                   ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationMessageSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Row(
+          children: [
+            Text('Notification Options', style: AppTextStyles.labelLarge),
+            Text(' *', style: TextStyle(color: AppColors.error)),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildNotificationButton(
+                'Notification',
+                AppColors.primary,
+                _enableNotification,
+                () {
+                  setState(() => _enableNotification = !_enableNotification);
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildNotificationButton(
+                'Message',
+                AppColors.primary,
+                _enableMessage,
+                () {
+                  setState(() => _enableMessage = !_enableMessage);
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNotificationButton(
+    String label,
+    Color color,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 40,
+        decoration: BoxDecoration(
+          color: isSelected ? color : Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (isSelected)
+                const Icon(Icons.check, color: Colors.white, size: 16),
+              if (isSelected) const SizedBox(width: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : AppColors.textSecondary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -415,6 +754,79 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter a task title'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    // Time is required for Daily task
+    if (_selectedTaskType == 'Daily task' &&
+        _selectedNotificationTime.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a time for daily task'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    // Date and time are required for One time task (unless no time limit)
+    if (_selectedTaskType == 'One time task' && !_noTimeLimit) {
+      if (_selectedDueDate.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select a due date for one time task'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+      if (_selectedNotificationTime.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select a time for one time task'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+    }
+
+    // Weekly task validations
+    if (_selectedTaskType == 'Weekly task') {
+      if (_selectedDays.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select at least one day of the week'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+      if (_selectedNotificationTime.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select a time for weekly task'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+    }
+
+    // At least one notification option is required for Daily task, One time task, and Weekly task
+    if ((_selectedTaskType == 'Daily task' ||
+            _selectedTaskType == 'One time task' ||
+            _selectedTaskType == 'Weekly task') &&
+        !_enableNotification &&
+        !_enableMessage) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Please select at least one notification option (Notification or Message)',
+          ),
           backgroundColor: AppColors.error,
         ),
       );
